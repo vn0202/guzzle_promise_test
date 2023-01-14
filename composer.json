@@ -1,0 +1,27 @@
+{
+    "name": "vannghia/guzzle_promise",
+    "description": "learn guzzle promise",
+    "autoload": {
+        "psr-4": {
+            "Vannghia\\GuzzlePromise\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "vn0202",
+            "email": "nghiavuxp0202@gmail.com"
+        }
+    ],
+    "require": {
+        "guzzlehttp/guzzle": "^7.0.1",
+        "symfony/var-dumper": "^6.2",
+        "symfony/dom-crawler": "^6.2",
+        "symfony/css-selector": "^6.2",
+        "league/uri": "^6.8",
+        "dibi/dibi": "^4.2",
+        "catfan/medoo": "^2.1"
+    },
+    "require-dev": {
+        "vannghia/simple_query_builder": "dev-main"
+    }
+}
