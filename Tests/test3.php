@@ -20,21 +20,22 @@ $base_url = "https://dantri.com.vn";
 function isExistRow($field, $value)
 {
     global  $database;
-    if ($database->count('list_url',[$field=>$value]) == 0) {
-        return false;
+    global $table;
+    if ($database->get($table,'id',[$field=>$value])) {
+        return true;
     }
-    return true;
+    return false;
 
 }
 
 //get all link that have existed in a link  and save to db
 function getAllLinkPerUrl($crawler)
-{global $database;
-    global $base_url;
-    global $table;
-    $crawler->filterXPath('//body//a')->each(function (\Symfony\Component\DomCrawler\Crawler $dom) use($table,$database,$base_url){
+{
+    $crawler->filterXPath('//body//a')->each(function (\Symfony\Component\DomCrawler\Crawler $dom){
 
-        
+        global $database;
+        global $base_url;
+        global $table;
         if ($dom->attr('href') !== '/' &&
             (str_starts_with($dom->attr('href'), '/') ||
                 str_starts_with($dom->attr('href'), $base_url))) {
