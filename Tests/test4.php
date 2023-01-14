@@ -4,26 +4,42 @@ require "../vendor/autoload.php";
 use Vannghia\GuzzlePromise\CustomClient;
 use Vannghia\SimpleQueryBuilder\Config\Connection;
 use Vannghia\GuzzlePromise\Url;
+use Illuminate\Database\Capsule\Manager as DB;
 
 
-$config = [
-    'driver' => 'mysqli',
+$db = new DB();
+
+$db->addConnection([
+    'driver' => 'mysql',
     'host' => 'localhost',
     'database' => 'guzzle_promise',
     'username' => 'root',
     'password' => 'root',
     'charset' => 'utf8',
-];
-$db = new Dibi\Connection($config);
+    'collation' => 'utf8_unicode_ci',
+    'prefix' => '',
+]);
+
+DB::schema()->dropIfExists('list_url');
+
+DB::schema()->create('list_url', function ($table) {
+
+    $table->increments('id');
+    $table->string('url');
+    $table->string('title')->nullable();
+    $table->string('hash');
+    $table->timestamps();
+});
+
+
+
 
 $client = \Vannghia\GuzzlePromise\Libs\GuzzleFactory::make();
 $base_url = "https://dantri.com.vn";
 
 function is_exist($field, $value)
 {
-    global  $db;
-    if ($db->query("SELECT id FROM list_url where $field = ? ", $value)->getRowCount() == 0) {
-
+    if (DB::table('list_url')->where($field,'=',$value)->count() ==0) {
         return false;
 
     }
@@ -32,9 +48,10 @@ function is_exist($field, $value)
 }
 function get_all_url_per_link($crawler)
 {
-    global $db;
-    global $base_url;
-    $crawler->filterXPath('//body//a')->each(function (\Symfony\Component\DomCrawler\Crawler $dom) use ($base_url, $db) {
+
+    $crawler->filterXPath('//body//a')->each(function (\Symfony\Component\DomCrawler\Crawler $dom) {
+
+        global $base_url;
         if ($dom->attr('href') !== '/' &&
             (str_starts_with($dom->attr('href'), '/') ||
                 str_starts_with($dom->attr('href'), $base_url))) {
@@ -44,7 +61,7 @@ function get_all_url_per_link($crawler)
             $data['is_go'] = 0;
             if(!is_exist('hash', $data['hash']))
             {
-                $db->query('INSERT INTO list_url ', $data);
+              DB::table('list_url')->insert($data);
             }
 
         }
@@ -57,7 +74,7 @@ function get_all_url_per_link($crawler)
 
 function getInforUrl(\Psr\Http\Message\ResponseInterface $response, $url)
 {
-    global $db;
+
     dump("==================== go to ==================" . $url);
     $html = $response->getBody()->getContents();
     $crawler = new \Symfony\Component\DomCrawler\Crawler();
@@ -70,16 +87,16 @@ function getInforUrl(\Psr\Http\Message\ResponseInterface $response, $url)
     get_all_url_per_link($crawler);
 
     dump($result);
-    $db->query('UPDATE list_url SET', ['is_go'=>1, 'title'=>$result['title']], 'WHERE hash = ?',$result['hash'] );
+
+    DB::table('list_url')->where('hash', $result['hash'])->update( ['is_go'=>1, 'title'=>$result['title']]);
 
 }
 
 function getPromise()
 {
-    global  $db;
     $client = \Vannghia\GuzzlePromise\Libs\GuzzleFactory::make([], 100);
 
-    $list_link = $db->query('SELECT url FROM list_url WHERE is_go = ? LIMIT 1000 ', 0)->fetchAll();
+    $list_link = DB::table('list_url')->select('url')->limit(100)->pluck('url');
     foreach ($list_link as $link) {
         if (!empty($link->url)) {
             $promise = $client->requestAsync('GET', $link->url, ['connect_timeout' => 10]);
@@ -130,10 +147,11 @@ $base_url = 'https://dantri.com.vn';
 $data['url'] = $base_url;
 $data['hash'] = md5($base_url);
 $data['is_go'] = 0;
-$db->query('INSERT INTO list_url',
-    $data);
+DB::table('list_url')->insert($data);
 
 
-getInforAllLink('https://dantri.com.vn', 25);
+$list_link = DB::table('list_url')->select('url')->limit(100)->pluck('url');
+dd($list_link);
+//getInforAllLink('https://dantri.com.vn', 25);
 
 

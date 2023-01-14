@@ -15,30 +15,37 @@ $database = new Medoo([
 
 $client = \Vannghia\GuzzlePromise\Libs\GuzzleFactory::make();
 $base_url = "https://dantri.com.vn";
-function is_exist($field, $data)
+
+//check whether a row  exits or not
+function isExistRow($field, $value)
 {
     global  $database;
-    if ($database->count('list_url',[$field=>$data]) == 0) {
+    if ($database->count('list_url',[$field=>$value]) == 0) {
         return false;
     }
     return true;
 
 }
-function get_all_url_per_link($crawler)
+
+//get all link that have existed in a link  and save to db
+function getAllLinkPerUrl($crawler)
 {
-    global $database;
-    global $base_url;
-    $crawler->filterXPath('//body//a')->each(function (\Symfony\Component\DomCrawler\Crawler $dom) use ($base_url, $database) {
+    $crawler->filterXPath('//body//a')->each(function (\Symfony\Component\DomCrawler\Crawler $dom) {
+        global $database;
+        global $base_url;
+        global $table;
+        
         if ($dom->attr('href') !== '/' &&
             (str_starts_with($dom->attr('href'), '/') ||
                 str_starts_with($dom->attr('href'), $base_url))) {
+            //create a full url by base_url and href 
             $url = \Vannghia\GuzzlePromise\Libs\CrawlerHelper::makeFullUrl($base_url, $dom->attr('href'));
             $data['url'] = $url;
             $data['hash'] = md5($url);
             $data['is_go'] = 0;
-            if(!is_exist('hash', $data['hash']))
+            if(!isExistRow('hash', $data['hash']))
             {
-                $database->insert('list_url', $data);
+                $database->insert($table, $data);
             }
 
         }
@@ -48,34 +55,35 @@ function get_all_url_per_link($crawler)
 
 }
 
-
-function getInforUrl(\Psr\Http\Message\ResponseInterface $response, $url)
+//set additional infor url that going into to get all other links inside it
+function getInforUrlGoingTo(\Psr\Http\Message\ResponseInterface $response, $url)
 {
     global $database;
+    global $table;
     dump("==================== go to ==================" . $url);
     $html = $response->getBody()->getContents();
     $crawler = new \Symfony\Component\DomCrawler\Crawler();
     $crawler->addHtmlContent($html);
-    $result['url'] = $url;
-    $result['title'] = $crawler->filter('title')->text();
-    $result['hash'] = md5($url);
-    $result['is_go'] = 1;
+    $title = $crawler->filter('title')->text();
+    $hash = md5($url);
 
-    get_all_url_per_link($crawler);
 
-    dump($result);
-    $database->update('list_url',['is_go'=>1, 'title'=>$result['title']],['hash'=>$result['hash']]);
+    getAllLinkPerUrl($crawler);
+
+    dump($url);
+    //addition infor title and set field is_go to 1 
+    $database->update($table,['is_go'=>1, 'title'=>$title],['hash'=>$hash]);
 
 }
 
 function getPromise()
 {
-    global  $db;
     global  $database;
+    global $table;
     $client = \Vannghia\GuzzlePromise\Libs\GuzzleFactory::make([], 100);
-
- $list_link = $database->select('list_url',['url'],['is_go'=>0]);
- foreach ( $list_link as $link) {
+    //get list links that have not gone into
+ $list_link_un_go = $database->select($table,['url'],['is_go'=>0]);
+ foreach ( $list_link_un_go as $link) {
      if (!empty($link['url'])) {
 
          $promise = $client->requestAsync('GET', $link['url'], ['connect_timeout' => 10]);
@@ -86,14 +94,15 @@ function getPromise()
 }
 
 
-function getAllInfor(int $concurrency = 25)
+function executorPromise(int $concurrency = 25)
 {
+    // init number of reject url
     $total_reject = 0;
     (new \GuzzleHttp\Promise\EachPromise(getPromise(),
         [
             'concurrency' => $concurrency,
             'fulfilled' => function (\Psr\Http\Message\ResponseInterface $response, $index) {
-                getInforUrl($response, $index);
+                getInforUrlGoingTo($response, $index);
             },
             'rejected' => function (\GuzzleHttp\Exception\TransferException $exception, $index) use (&$total_reject) {
                 $total_reject++;
@@ -105,31 +114,35 @@ function getAllInfor(int $concurrency = 25)
 }
 
 
-function getInforAllLink(string $base_url, int $concurrency = 25)
+function getInfoOfAllLinkRelativeToBaseUrl(string $base_url, int $concurrency = 25)
 {
-    global $db;
+
     do {
-        $check = getAllInfor(25);
+        $check = executorPromise($concurrency);
         if ($check > 0) {
             echo "\n \n================sleeping==================\n \n";
             sleep(5);
                     }
 
-        $flag = is_exist('is_go',0);
+        $flag = isExistRow('is_go',0);
 
     } while ($flag);
 
 
 }
 
+$client = \Vannghia\GuzzlePromise\Libs\GuzzleFactory::make([], 100);
+//url that you want to start;
 $base_url = 'https://dantri.com.vn';
+//set table name
+$table  = 'list_url';
 $data['url'] = $base_url;
 $data['hash'] = md5($base_url);
 $data['is_go'] = 0;
-$database->insert('list_url',$data);
+$database->insert($table,$data);
 
 
 
-getInforAllLink('https://dantri.com.vn', 25);
+getInfoOfAllLinkRelativeToBaseUrl('https://dantri.com.vn', 25);
 
 
