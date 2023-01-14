@@ -29,11 +29,11 @@ function isExistRow($field, $value)
 
 //get all link that have existed in a link  and save to db
 function getAllLinkPerUrl($crawler)
-{
-    $crawler->filterXPath('//body//a')->each(function (\Symfony\Component\DomCrawler\Crawler $dom) {
-        global $database;
-        global $base_url;
-        global $table;
+{global $database;
+    global $base_url;
+    global $table;
+    $crawler->filterXPath('//body//a')->each(function (\Symfony\Component\DomCrawler\Crawler $dom) use($table,$database,$base_url){
+
         
         if ($dom->attr('href') !== '/' &&
             (str_starts_with($dom->attr('href'), '/') ||

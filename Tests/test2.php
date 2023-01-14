@@ -16,10 +16,10 @@ $db = new Dibi\Connection($config_db);
 function isExistRow($field, $data)
 {
     global  $db;
-    if ($db->query("SELECT id FROM list_url where $field = ? ", $data)->getRowCount() == 0) {
-        return false;
+    if ($db->query("SELECT id FROM list_url where $field = ? ", $data)->fetch()) {
+        return true;
     }
-    return true;
+    return false;
 
 }
 //get all link that have existed in a link  and save to db
@@ -135,7 +135,6 @@ $data['url'] = $base_url;
 $data['hash'] = md5($base_url);
 $data['is_go'] = 0;
 $db->query('INSERT INTO list_url', $data);
-
 
 getInfoOfAllLinkRelativeToBaseUrl($base_url, 25);
 
