@@ -5,8 +5,7 @@ require "../vendor/autoload.php";
 
 
 use Illuminate\Database\Capsule\Manager as Capsule;
-use Illuminate\Container\Container;
-use Illuminate\Contracts\Events\Dispatcher;
+
 $capsule = new Capsule;
 
 $capsule->addConnection([
@@ -140,7 +139,7 @@ Capsule::schema()->create('list_url', function ($table) {
     $table->timestamps();
 });
 $client = \Vannghia\GuzzlePromise\Libs\GuzzleFactory::make([], 100);
-$base_url = "https://dantri.com.vn";
+$base_url = "https://vnexpress.net";
 $table = 'list_url';
 $data['url'] = $base_url;
 $data['hash'] = md5($base_url);

@@ -144,6 +144,6 @@ $database->insert($table,$data);
 
 
 
-getInfoOfAllLinkRelativeToBaseUrl('https://dantri.com.vn', 25);
+getInfoOfAllLinkRelativeToBaseUrl($base_url, 25);
 
 
