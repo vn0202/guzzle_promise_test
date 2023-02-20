@@ -42,7 +42,7 @@ final class GuzzleFactory
      *
      * @var int
      */
-    const TIMEOUT = 15;
+    const TIMEOUT = 20;
 
     /**
      * The default backoff multiplier.

@@ -14,7 +14,6 @@ $database = new Medoo([
 ]);
 
 $client = \Vannghia\GuzzlePromise\Libs\GuzzleFactory::make();
-$base_url = "https://dantri.com.vn";
 
 //check whether a row  exits or not
 function isExistRow($field, $value)
@@ -36,23 +35,27 @@ function getAllLinkPerUrl($crawler)
         global $database;
         global $base_url;
         global $table;
-        if ($dom->attr('href') !== '/' &&
-            (str_starts_with($dom->attr('href'), '/') ||
-                str_starts_with($dom->attr('href'), $base_url))) {
-            //create a full url by base_url and href 
-            $url = \Vannghia\GuzzlePromise\Libs\CrawlerHelper::makeFullUrl($base_url, $dom->attr('href'));
-            $data['url'] = $url;
-            $data['hash'] = md5($url);
-            $data['is_go'] = 0;
-            if(!isExistRow('hash', $data['hash']))
-            {
-                $database->insert($table, $data);
+        try {
+            if ($dom->attr('href') !== '/' && !str_contains($dom->attr('href'),'tim-kiem')
+                &&(str_starts_with($dom->attr('href'), '/') ||
+                    str_starts_with($dom->attr('href'), $base_url))) {
+                //create a full url by base_url and href
+                $url = \Vannghia\GuzzlePromise\Libs\CrawlerHelper::makeFullUrl($base_url, $dom->attr('href'));
+                $data['url'] = $url;
+                $data['hash'] = md5($url);
+                $data['is_go'] = 0;
+                if (!isExistRow('hash', $data['hash'])) {
+                    $database->insert($table, $data);
+                }
+
             }
 
+        }catch (Throwable $e)
+        {
+            echo $e->getMessage();
         }
-
-
     });
+
 
 }
 
@@ -65,15 +68,21 @@ function getInforUrlGoingTo(\Psr\Http\Message\ResponseInterface $response, $url)
     $html = $response->getBody()->getContents();
     $crawler = new \Symfony\Component\DomCrawler\Crawler();
     $crawler->addHtmlContent($html);
-    $title = $crawler->filter('title')->text();
-    $hash = md5($url);
+    try {
+        $title = $crawler->filter('title')->text();
+        $hash = md5($url);
 
 
-    getAllLinkPerUrl($crawler);
+        getAllLinkPerUrl($crawler);
 
-    dump($url);
-    //addition infor title and set field is_go to 1 
-    $database->update($table,['is_go'=>1, 'title'=>$title],['hash'=>$hash]);
+        dump($url);
+        //addition infor title and set field is_go to 1
+        $database->update($table,['is_go'=>1, 'title'=>$title],['hash'=>$hash]);
+    }catch (Throwable $e){
+        echo $e->getMessage();
+
+    }
+
 
 }
 
@@ -145,5 +154,6 @@ $database->insert($table,$data);
 
 
 getInfoOfAllLinkRelativeToBaseUrl($base_url, 25);
+
 
 

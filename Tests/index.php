@@ -2,7 +2,7 @@
 require "../vendor/autoload.php";
 
 use Vannghia\GuzzlePromise\CustomClient;
-
+dd("..".__DIR__. "/vendor/autoload.php");
 $proxy = [
     '23.254.100.211:8800',
 '104.227.229.216:8800',

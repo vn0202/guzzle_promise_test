@@ -128,18 +128,21 @@ function getInfoOfAllLinkRelativeToBaseUrl(string $base_url, int $concurrency = 
 
 }
 
-Capsule::schema()->dropIfExists('list_url');
-Capsule::schema()->create('list_url', function ($table) {
-
-    $table->increments('id');
-    $table->string('url');
-    $table->string('title')->nullable();
-    $table->string('hash')->index();
-    $table->integer('is_go')->default(0);
-    $table->timestamps();
-});
+//Capsule::schema()->dropIfExists('list_url');
+//Capsule::schema()->create('list_url', function ($table) {
+//
+//    $table->increments('id');
+//    $table->string('url');
+//    $table->string('title')->nullable();
+//    $table->string('hash')->index();
+//    $table->integer('is_go')->default(0);
+//    $table->timestamps();
+//});
 $client = \Vannghia\GuzzlePromise\Libs\GuzzleFactory::make([], 100);
-$base_url = "https://vnexpress.net";
+$base_url = "https://dantri.com.vn";
+
+
+
 $table = 'list_url';
 $data['url'] = $base_url;
 $data['hash'] = md5($base_url);
@@ -149,6 +152,6 @@ Capsule::table('list_url')->insert($data);
 
 
 
-getInfoOfAllLinkRelativeToBaseUrl($base_url, 25);
+//getInfoOfAllLinkRelativeToBaseUrl($base_url, 25);
 
 
